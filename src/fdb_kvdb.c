@@ -34,7 +34,11 @@
 /* magic word(`F`, `D`, `B`, `1`) */
 #define SECTOR_MAGIC_WORD                        0x30424446
 /* magic word(`K`, `V`, `0`, `0`) */
+#if (COMPRESS_HEADER_STRUCT == 1)
+#define KV_MAGIC_WORD                            0x3130564B
+#else
 #define KV_MAGIC_WORD                            0x3030564B
+#endif
 /* GC minimum number of empty sectors. GC will using at least 1 empty sector. */
 #define GC_MIN_EMPTY_SEC_NUM                     1
 
@@ -99,6 +103,9 @@
 
 #define VER_NUM_KV_NAME                         "__ver_num__"
 
+#if ((FDB_WRITE_GRAN == 1) && (defined(__GNUC__)) && (COMPRESS_HEADER_STRUCT == 1))
+#pragma pack(push,1)
+#endif
 struct sector_hdr_data {
     struct {
         uint8_t store[FDB_STORE_STATUS_TABLE_SIZE];  /**< sector store status @see fdb_sector_store_status_t */
@@ -111,8 +118,14 @@ struct sector_hdr_data {
     uint8_t padding[4];                          /**< align padding for 64bit and 128bit write granularity */
 #endif
 };
+#if ((FDB_WRITE_GRAN == 1) && (defined(__GNUC__)) && (COMPRESS_HEADER_STRUCT == 1))
+#pragma pack(pop)
+#endif
 typedef struct sector_hdr_data *sector_hdr_data_t;
 
+#if ((FDB_WRITE_GRAN == 1) && (defined(__GNUC__)) && (COMPRESS_HEADER_STRUCT == 1))
+#pragma pack(push,1)
+#endif
 struct kv_hdr_data {
     uint8_t status_table[KV_STATUS_TABLE_SIZE];  /**< KV node status, @see fdb_kv_status_t */
     uint32_t magic;                              /**< magic word(`K`, `V`, `0`, `0`) */
@@ -127,6 +140,9 @@ struct kv_hdr_data {
     uint8_t padding[12];                         /**< align padding for 128bit write granularity */
 #endif
 };
+#if ((FDB_WRITE_GRAN == 1) && (defined(__GNUC__)) && (COMPRESS_HEADER_STRUCT == 1))
+#pragma pack(pop)
+#endif
 typedef struct kv_hdr_data *kv_hdr_data_t;
 
 struct alloc_kv_cb_args {
