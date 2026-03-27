@@ -30,7 +30,11 @@
 #endif
 
 /* magic word(`T`, `S`, `L`, `0`) */
+#if (COMPRESS_HEADER_STRUCT == 1)
+#define SECTOR_MAGIC_WORD                        0x314C5354
+#else
 #define SECTOR_MAGIC_WORD                        0x304C5354
+#endif
 
 #define TSL_STATUS_TABLE_SIZE                    FDB_STATUS_TABLE_SIZE(FDB_TSL_STATUS_NUM)
 
@@ -77,6 +81,9 @@
         if (result != FDB_NO_ERR) return result;                               \
     } while(0);
 
+#if ((FDB_WRITE_GRAN == 1) && (defined(__GNUC__)) && (COMPRESS_HEADER_STRUCT == 1))
+#pragma pack(push,1)
+#endif
 struct sector_hdr_data {
     uint8_t status[FDB_STORE_STATUS_TABLE_SIZE]; /**< sector store status @see fdb_sector_store_status_t */
     uint32_t magic;                              /**< magic word(`T`, `S`, `L`, `0`) */
@@ -88,15 +95,24 @@ struct sector_hdr_data {
     } end_info[2];
     uint32_t reserved;
 };
+#if ((FDB_WRITE_GRAN == 1) && (defined(__GNUC__)) && (COMPRESS_HEADER_STRUCT == 1))
+#pragma pack(pop)
+#endif
 typedef struct sector_hdr_data *sector_hdr_data_t;
 
 /* time series log node index data */
+#if ((FDB_WRITE_GRAN == 1) && (defined(__GNUC__)) && (COMPRESS_HEADER_STRUCT == 1))
+#pragma pack(push,1)
+#endif
 struct log_idx_data {
     uint8_t status_table[TSL_STATUS_TABLE_SIZE]; /**< node status, @see fdb_tsl_status_t */
     fdb_time_t time;                             /**< node timestamp */
     uint32_t log_len;                            /**< node total length (header + name + value), must align by FDB_WRITE_GRAN */
     uint32_t log_addr;                           /**< node address */
 };
+#if ((FDB_WRITE_GRAN == 1) && (defined(__GNUC__)) && (COMPRESS_HEADER_STRUCT == 1))
+#pragma pack(pop)
+#endif
 typedef struct log_idx_data *log_idx_data_t;
 
 struct query_count_args {
@@ -481,11 +497,14 @@ fdb_err_t fdb_tsl_append_with_ts(fdb_tsdb_t db, fdb_blob_t blob, fdb_time_t time
  * @param cb callback
  * @param arg callback argument
  */
+uint32_t my_size;
 void fdb_tsl_iter(fdb_tsdb_t db, fdb_tsl_cb cb, void *arg)
 {
     struct tsdb_sec_info sector;
     uint32_t sec_addr, traversed_len = 0;
     struct fdb_tsl tsl;
+
+    my_size = sizeof(struct log_idx_data);
 
     if (!db_init_ok(db)) {
         FDB_INFO("Error: TSL (%s) isn't initialize OK.\n", db_name(db));
